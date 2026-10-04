@@ -1,5 +1,5 @@
 #pragma once
-// Plain data types shared by every module of the engine.
+
 #include <cstdint>
 
 enum class Anomaly : uint8_t { None = 0, OutOfRange, Spike, Stuck, Interlock };
@@ -21,7 +21,7 @@ struct Sample {
     double   temp_c     = 0;
     double   hum_pct    = 0;
     double   press_pa   = 0;
-    double   heater_pct = 0;   // actuator command applied after this sample
+    double   heater_pct = 0;   
     double   setpoint_c = 0;
     uint32_t hw_flags   = 0;
     Anomaly  anomaly    = Anomaly::None;
