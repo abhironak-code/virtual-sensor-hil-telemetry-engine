@@ -1,15 +1,4 @@
-// SPDX-License-Identifier: GPL-2.0
-/*
- * vsensor.c - Virtual sensor character device ("hardware" side of the HIL).
- *
- * It emulates a heated chamber with temperature / humidity / pressure
- * sensors. Every read() advances a first-order thermal model by one step:
- *
- *     T[n+1] = T[n] + heater% * 10 mC - (T[n] - T_amb) / 100
- *
- * User space closes the loop by writing the heater value with ioctl().
- * Integer maths only: floating point must not be used in kernel code.
- */
+
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/init.h>
@@ -22,8 +11,7 @@
 #include "vsensor_ioctl.h"
 
 #define AMBIENT_MC     25000
-#define HEAT_PER_PCT   10        /* mC added per step per 1% heater */
-
+#define HEAT_PER_PCT   10        
 static int noise_mc = 150;
 module_param(noise_mc, int, 0444);
 MODULE_PARM_DESC(noise_mc, "Peak sensor noise in milli-degC (default 150)");
@@ -57,7 +45,7 @@ static s32 vs_noise(s32 amp)
 {
 	if (amp <= 0)
 		return 0;
-	vs.lcg = vs.lcg * 1664525u + 1013904223u;       /* Numerical Recipes LCG */
+	vs.lcg = vs.lcg * 1664525u + 1013904223u;       
 	return (s32)((vs.lcg >> 16) % (2 * amp + 1)) - amp;
 }
 
@@ -78,7 +66,7 @@ static ssize_t vs_read(struct file *filp, char __user *buf, size_t len,
 
 	mutex_lock(&vs.lock);
 
-	/* 1. advance the plant (thermal model) one step */
+	
 	vs.temp_mc += (s32)vs.heater * HEAT_PER_PCT -
 		      (vs.temp_mc - AMBIENT_MC) / 100;
 	vs.seq++;
@@ -90,7 +78,7 @@ static ssize_t vs_read(struct file *filp, char __user *buf, size_t len,
 		return -EIO;
 	}
 
-	/* 2. sample the sensor (noise + optional fault) */
+	
 	temp = vs.temp_mc + vs_noise(noise_mc);
 	s.flags = 0;
 
@@ -111,7 +99,7 @@ static ssize_t vs_read(struct file *filp, char __user *buf, size_t len,
 		}
 	}
 
-	/* humidity falls as the chamber heats; pressure = slow triangle wave */
+	
 	hum = 50000 - (vs.temp_mc - AMBIENT_MC) / 2;
 	hum = clamp_t(s32, hum, 0, 100000);
 	p = vs.seq % 200;
@@ -184,7 +172,7 @@ static struct miscdevice vs_misc = {
 	.minor = MISC_DYNAMIC_MINOR,
 	.name  = VS_DEV_NAME,
 	.fops  = &vs_fops,
-	.mode  = 0666,           /* lets the demo run without root */
+	.mode  = 0666,           
 };
 
 static int __init vs_init(void)
