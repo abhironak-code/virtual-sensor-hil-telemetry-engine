@@ -1,5 +1,4 @@
-#!/bin/sh
-# Build and load the kernel module, show it in dmesg and /dev.
+
 set -e
 cd "$(dirname "$0")/../driver"
 make
