@@ -1,13 +1,4 @@
-// Virtual Sensor HIL Telemetry Engine
-// ----------------------------------------------------------------------------
-//   control thread :  read sensor -> check health -> PID -> set heater   (every 100 ms)
-//   main thread    :  small web server, shows the data in the browser
-//   shared data    :  protected by one mutex
-//
-//   Browser  <--HTTP-->  [web server]  <--shared data-->  [control thread]
-//                                                               |  read()/ioctl()
-//                                                       /dev/vsensor0 (kernel driver)
-//                                                       or software simulator
+
 #include <chrono>
 #include <cmath>
 #include <csignal>
@@ -25,9 +16,9 @@
 #include "web_server.hpp"
 
 static volatile std::sig_atomic_t g_stop = 0;
-static void onSignal(int) { g_stop = 1; }          // Ctrl+C -> just set a flag
+static void onSignal(int) { g_stop = 1; }          
 
-// ---------------------------------------------------------------- shared data
+
 struct Shared {
     std::mutex lock;                      // protects everything below
     std::deque<Sample> history;           // last 300 samples (for the charts)
@@ -39,13 +30,12 @@ struct Shared {
     std::string source;
 };
 
-static void addEvent(Shared& sh, const std::string& text) {       // caller holds the lock
+static void addEvent(Shared& sh, const std::string& text) {      
     sh.events.push_back(text);
     if (sh.events.size() > 50) sh.events.pop_front();
 }
 
-// ------------------------------------------------------------ control thread
-// This is the "loop" of Hardware-in-the-Loop. Only this thread touches the device.
+
 static void controlLoop(ISensorSource& dev, Shared& sh, int periodMs, const char* csvPath) {
     PID pid(8.0, 0.4, 1.0);
     HealthChecker health;
@@ -58,10 +48,10 @@ static void controlLoop(ISensorSource& dev, Shared& sh, int periodMs, const char
     auto next = std::chrono::steady_clock::now();
 
     while (!g_stop) {
-        next += std::chrono::milliseconds(periodMs);          // fixed rate, no drift
+        next += std::chrono::milliseconds(periodMs);          
         std::this_thread::sleep_until(next);
 
-        // 1) apply commands that came from the browser
+       
         double setpoint;
         {
             std::lock_guard<std::mutex> g(sh.lock);
@@ -69,7 +59,7 @@ static void controlLoop(ISensorSource& dev, Shared& sh, int periodMs, const char
             if (sh.faultChanged) { dev.setFault(sh.fault); sh.faultChanged = false; }
         }
 
-        // 2) read the sensor
+        
         Sample s;
         ReadStatus status = dev.read(s);
         if (status == ReadStatus::Fatal) { g_stop = 1; break; }
@@ -117,7 +107,7 @@ static void controlLoop(ISensorSource& dev, Shared& sh, int periodMs, const char
     if (csv) std::fclose(csv);
 }
 
-// ----------------------------------------------------------------- JSON for /api/data
+
 static std::string buildJson(Shared& sh) {
     static const char* faultNames[] = {"none", "stuck", "spike", "dropout"};
     std::lock_guard<std::mutex> g(sh.lock);
@@ -140,7 +130,7 @@ static std::string buildJson(Shared& sh) {
     return j;
 }
 
-// ----------------------------------------------------------------- web routes
+
 static HttpResponse route(Shared& sh, const std::string& path) {
     HttpResponse r;
     if (path == "/" || path == "/index.html") {
@@ -170,15 +160,15 @@ static HttpResponse route(Shared& sh, const std::string& path) {
     return r;
 }
 
-// ----------------------------------------------------------------------- main
+
 int main(int argc, char** argv) {
     std::string mode = "auto", bindIp = "127.0.0.1", csvPath = "telemetry.csv";
     int port = 8080, periodMs = 100;
     for (int i = 1; i + 1 < argc; i += 2) {
         std::string a = argv[i], v = argv[i + 1];
-        if (a == "--mode") mode = v;                 // auto | driver | sim
+        if (a == "--mode") mode = v;                
         else if (a == "--port") port = std::atoi(v.c_str());
-        else if (a == "--bind") bindIp = v;          // use 0.0.0.0 to open from another PC
+        else if (a == "--bind") bindIp = v;          
         else if (a == "--period-ms") periodMs = std::atoi(v.c_str());
         else if (a == "--log") csvPath = v;
         else { std::printf("usage: %s [--mode auto|driver|sim] [--port N] [--bind IP] [--period-ms N] [--log FILE]\n", argv[0]); return 1; }
@@ -186,11 +176,11 @@ int main(int argc, char** argv) {
     if (periodMs < 10) periodMs = 10;
 
     struct sigaction sa{};
-    sa.sa_handler = onSignal;                        // no SA_RESTART
+    sa.sa_handler = onSignal;                        
     sigaction(SIGINT, &sa, nullptr);
     sigaction(SIGTERM, &sa, nullptr);
 
-    // choose the data source: real kernel driver if available, otherwise the simulator
+    
     std::unique_ptr<ISensorSource> dev;
     if (mode != "sim") {
         dev = makeDriverSource("/dev/vsensor0");
