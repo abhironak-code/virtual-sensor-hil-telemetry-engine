@@ -1,4 +1,4 @@
-// Dependency-free unit tests (run with: make test)
+
 #include <cmath>
 #include <cstdio>
 #include "control.hpp"
@@ -26,14 +26,14 @@ static void test_pid_closed_loop() {
     src->open();
     PID pid(8.0, 0.4, 1.0);
     Sample s; double heater = 0;
-    for (int i = 0; i < 600; ++i) {                    // 60 s of simulated time
+    for (int i = 0; i < 600; ++i) {                    
         CHECK(src->read(s) == ReadStatus::Ok);
         heater = pid.update(60.0, s.temp_c, 0.1);
         src->setHeater(static_cast<unsigned>(std::lround(heater)));
     }
     std::printf("  final T=%.2f heater=%.0f%%\n", s.temp_c, heater);
     CHECK(std::fabs(s.temp_c - 60.0) < 1.0);
-    CHECK(heater > 20 && heater < 60);                  // ~35% expected at equilibrium
+    CHECK(heater > 20 && heater < 60);                  
 }
 
 static void test_fault_modes() {
@@ -49,7 +49,7 @@ static void test_fault_modes() {
     src->setFault(1);
     src->read(s); double a = s.temp_c;
     src->read(s);
-    CHECK(s.temp_c == a);                               // frozen
+    CHECK(s.temp_c == a);                               
 }
 
 int main() {
