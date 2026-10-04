@@ -19,7 +19,7 @@ uint64_t monotonicNs() {
     return uint64_t(ts.tv_sec) * 1000000000ull + uint64_t(ts.tv_nsec);
 }
 
-// ----------------------------------------------------------------------------
+
 class DriverSource final : public ISensorSource {
 public:
     explicit DriverSource(std::string path) : path_(std::move(path)) {}
@@ -63,8 +63,7 @@ private:
     int fd_ = -1;
 };
 
-// ----------------------------------------------------------------------------
-// Same thermal model as driver/vsensor.c, but in floating point.
+
 class SimSource final : public ISensorSource {
 public:
     explicit SimSource(unsigned seed) : rng_(seed), noise_(-0.15, 0.15) {}
@@ -117,7 +116,7 @@ private:
     bool latched_ = false;
 };
 
-} // namespace
+} 
 
 std::unique_ptr<ISensorSource> makeDriverSource(const std::string& path) {
     return std::make_unique<DriverSource>(path);
