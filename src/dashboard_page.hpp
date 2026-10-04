@@ -1,7 +1,5 @@
 #pragma once
-// The dashboard web page, stored inside the C++ program as one string.
-// The server sends it to the browser when you open http://localhost:8080
-// It asks the server for fresh numbers (/api/data) 5 times per second.
+
 static const char* const DASHBOARD_HTML = R"HTML(<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
